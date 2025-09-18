@@ -1,0 +1,165 @@
+{
+  "contractName": "Counter",
+  "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_initialValue",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "constructor"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "oldValue",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "newValue",
+          "type": "uint256"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "changer",
+          "type": "address"
+        }
+      ],
+      "name": "CountChanged",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "resetter",
+          "type": "address"
+        }
+      ],
+      "name": "CountReset",
+      "type": "event"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_value",
+          "type": "uint256"
+        }
+      ],
+      "name": "add",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "decrement",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getCount",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getInfo",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "_count",
+          "type": "uint256"
+        },
+        {
+          "internalType": "address",
+          "name": "_owner",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "increment",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "owner",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "reset",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_value",
+          "type": "uint256"
+        }
+      ],
+      "name": "setCount",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_value",
+          "type": "uint256"
+        }
+      ],
+      "name": "subtract",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ],
+  "bytecode": "6080604052348015600e575f5ffd5b5060405161055a38038061055a833981016040819052602b916084565b5f818155600180546001600160a01b03191633908117909155604080519283526020830184905290917f0c71f6d459e7ac4df0a4abe9377b1b730c147cf19846f02685321aee0fd4c663910160405180910390a250609a565b5f602082840312156093575f5ffd5b5051919050565b6104b3806100a75f395ff3fe608060405234801561000f575f5ffd5b5060043610610090575f3560e01c80638da5cb5b116100635780638da5cb5b146100eb578063a87d942c14610116578063d09de08a14610126578063d14e62b81461012e578063d826f88f14610141575f5ffd5b80631003e2d2146100945780631dc05f17146100a95780632baeceb7146100bc5780635a9b0b89146100c4575b5f5ffd5b6100a76100a2366004610406565b610149565b005b6100a76100b7366004610406565b610193565b6100a761020a565b5f54600154604080519283526001600160a01b039091166020830152015b60405180910390f35b6001546100fe906001600160a01b031681565b6040516001600160a01b0390911681526020016100e2565b5f546040519081526020016100e2565b6100a76102b0565b6100a761013c366004610406565b6102c2565b6100a7610352565b5f80549082908061015a8385610431565b90915550505f5460405133915f51602061045e5f395f51905f529161018791858252602082015260400190565b60405180910390a25050565b805f5410156101f95760405162461bcd60e51b815260206004820152602760248201527f436f756e7465723a20696e73756666696369656e7420636f756e7420746f20736044820152661d589d1c9858dd60ca1b60648201526084015b60405180910390fd5b5f80549082908061015a838561044a565b5f5f54116102665760405162461bcd60e51b8152602060048201526024808201527f436f756e7465723a2063616e6e6f742064656372656d656e742062656c6f77206044820152637a65726f60e01b60648201526084016101f0565b5f80549060019080610278838561044a565b90915550505f5460405133915f51602061045e5f395f51905f52916102a591858252602082015260400190565b60405180910390a250565b5f805490600190806102788385610431565b6001546001600160a01b031633146103265760405162461bcd60e51b815260206004820152602160248201527f436f756e7465723a206f6e6c79206f776e65722063616e2073657420636f756e6044820152601d60fa1b60648201526084016101f0565b5f805490829055604080518281526020810184905233915f51602061045e5f395f51905f529101610187565b6001546001600160a01b031633146103ac5760405162461bcd60e51b815260206004820152601d60248201527f436f756e7465723a206f6e6c79206f776e65722063616e20726573657400000060448201526064016101f0565b5f80805560405133917fa5ee6258204973c56c5a39c4ac31e61723f410d84f9e8117ba52b76b7cea990c91a25f805460408051918252602082019290925233915f51602061045e5f395f51905f52910160405180910390a2565b5f60208284031215610416575f5ffd5b5035919050565b634e487b7160e01b5f52601160045260245ffd5b808201808211156104445761044461041d565b92915050565b818103818111156104445761044461041d56fe0c71f6d459e7ac4df0a4abe9377b1b730c147cf19846f02685321aee0fd4c663a2646970667358221220ca0f37070f290b2bad0cff92ef4b4b7aba84a5e587a00bf679c5670c0327e7ef64736f6c634300081e0033",
+  "compiledAt": "2025-09-18T01:11:57.643Z",
+  "compiler": {
+    "version": "0.8.30+commit.73712a01.Emscripten.clang",
+    "optimizer": true,
+    "runs": 200
+  }
+}

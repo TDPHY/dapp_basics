@@ -1,0 +1,23 @@
+{
+  "name": "dapp-basics-task01",
+  "version": "1.0.0",
+  "description": "DApp基础任务 - 区块链读写和智能合约交互",
+  "main": "scripts/compile_contract.js",
+  "scripts": {
+    "compile": "node scripts/compile_contract.js",
+    "install-deps": "npm install",
+    "setup": "npm install && npm run compile"
+  },
+  "dependencies": {
+    "solc": "^0.8.21"
+  },
+  "keywords": [
+    "ethereum",
+    "solidity",
+    "go",
+    "blockchain",
+    "dapp"
+  ],
+  "author": "",
+  "license": "MIT"
+}
