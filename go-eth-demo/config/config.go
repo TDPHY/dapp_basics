@@ -12,14 +12,14 @@ import (
 // Config 存储应用程序配置
 type Config struct {
 	// 以太坊网络配置
-	EthereumRPCURL string
-	ChainID        int64
-	NetworkName    string
+	EthereumRPCURL string // RPC 节点地址
+	ChainID        int64  // 链 ID (Sepolia: 11155111)
+	NetworkName    string // 网络名称 (sepolia)
 
-	// 账户配置
-	PrivateKey       string
-	KeystorePath     string
-	KeystorePassword string
+	// 账户配置 (后续阶段使用)
+	PrivateKey       string // 私钥 (用于交易签名)
+	KeystorePath     string // KeyStore 文件路径
+	KeystorePassword string // KeyStore 密码
 }
 
 // LoadConfig 从环境变量加载配置
@@ -49,10 +49,12 @@ func LoadConfig() (*Config, error) {
 
 // validate 验证配置的有效性
 func (c *Config) validate() error {
+	// 1. 检查 RPC URL 是否存在
 	if c.EthereumRPCURL == "" {
 		return fmt.Errorf("ETHEREUM_RPC_URL is required")
 	}
 
+	// 2. 验证 URL 格式
 	if !strings.HasPrefix(c.EthereumRPCURL, "http://") &&
 		!strings.HasPrefix(c.EthereumRPCURL, "https://") &&
 		!strings.HasPrefix(c.EthereumRPCURL, "ws://") &&
@@ -60,6 +62,7 @@ func (c *Config) validate() error {
 		return fmt.Errorf("invalid RPC URL format: %s", c.EthereumRPCURL)
 	}
 
+	// 3. 验证链 ID
 	if c.ChainID <= 0 {
 		return fmt.Errorf("invalid chain ID: %d", c.ChainID)
 	}

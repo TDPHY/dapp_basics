@@ -12,25 +12,27 @@ import (
 
 // EthClient 封装以太坊客户端
 type EthClient struct {
-	client  *ethclient.Client
-	config  *config.Config
-	timeout time.Duration
+	client  *ethclient.Client // 底层 go-ethereum 客户端
+	config  *config.Config    // 配置信息
+	timeout time.Duration     // 操作超时时间
 }
 
 // NewEthClient 创建新的以太坊客户端
 func NewEthClient(cfg *config.Config) (*EthClient, error) {
+	// 1. 建立底层连接
 	client, err := ethclient.Dial(cfg.EthereumRPCURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to Ethereum client: %w", err)
 	}
 
+	// 2. 创建封装实例
 	ethClient := &EthClient{
 		client:  client,
 		config:  cfg,
 		timeout: 30 * time.Second, // 默认超时时间
 	}
 
-	// 验证连接
+	// 3. 验证连接有效性
 	if err := ethClient.ping(); err != nil {
 		client.Close()
 		return nil, fmt.Errorf("failed to ping Ethereum client: %w", err)
