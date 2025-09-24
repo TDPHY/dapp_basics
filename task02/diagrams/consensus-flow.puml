@@ -1,0 +1,219 @@
+@startuml 共识机制流程图
+!theme plain
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName "Microsoft YaHei"
+skinparam defaultFontSize 11
+
+title 以太坊共识机制演进：从PoW到PoS
+
+' 定义参与者
+participant "矿工节点\nMiner Node" as miner
+participant "验证者节点\nValidator Node" as validator
+participant "信标链\nBeacon Chain" as beacon
+participant "执行层\nExecution Layer" as execution
+participant "共识层\nConsensus Layer" as consensus
+participant "网络\nNetwork" as network
+
+' PoW阶段 (Ethash)
+group PoW共识阶段 (Proof of Work - Ethash) [已废弃]
+    
+    note over miner, network : **工作量证明 (Proof of Work)**
+    
+    miner -> miner : 1. 收集交易
+    note right : 从交易池选择高Gas价格交易
+    
+    miner -> miner : 2. 构建区块
+    note right : 创建区块头，包含交易根哈希
+    
+    miner -> miner : 3. 计算Ethash
+    note right : 使用DAG数据集进行哈希计算
+    
+    loop 挖矿循环
+        miner -> miner : 4. 尝试不同nonce值
+        note right : 寻找满足难度目标的哈希值
+        
+        alt 找到有效哈希
+            miner -> network : 5. 广播新区块
+            note right : 向网络广播挖出的区块
+            break
+        else 继续挖矿
+            note right : 增加nonce继续尝试
+        end
+    end
+    
+    network -> network : 6. 验证区块
+    note right : 其他节点验证区块有效性
+    
+    alt 区块有效
+        network -> network : 7. 接受区块
+        note right : 将区块添加到本地链
+    else 区块无效
+        network -> network : 拒绝区块
+        note right : 丢弃无效区块
+    end
+end
+
+' 过渡阶段
+group 过渡阶段 (Transition Phase) [The Merge]
+    
+    note over beacon, execution : **合并事件 (The Merge) - 2022年9月**
+    
+    beacon -> beacon : 1. 信标链启动
+    note right : PoS共识层开始运行
+    
+    execution -> execution : 2. 执行层继续
+    note right : 保持PoW挖矿直到合并
+    
+    beacon -> execution : 3. 合并触发
+    note right : 达到预定的TTD (Terminal Total Difficulty)
+    
+    execution -> beacon : 4. 切换到PoS
+    note right : 停止PoW挖矿，接受PoS区块
+    
+    beacon -> execution : 5. 提供区块
+    note right : 信标链验证者提议执行载荷
+end
+
+' PoS阶段
+group PoS共识阶段 (Proof of Stake - Casper FFG)
+    
+    note over validator, consensus : **权益证明 (Proof of Stake)**
+    
+    validator -> beacon : 1. 质押ETH
+    note right : 质押32 ETH成为验证者
+    
+    beacon -> beacon : 2. 验证者激活
+    note right : 验证者进入激活队列
+    
+    loop 每个时隙 (12秒)
+        beacon -> validator : 3. 选择提议者
+        note right : 基于RANDAO随机选择
+        
+        validator -> execution : 4. 构建执行载荷
+        note right : 包含交易和状态变更
+        
+        validator -> beacon : 5. 提议信标区块
+        note right : 包含执行载荷和共识数据
+        
+        beacon -> network : 6. 广播区块提议
+        note right : 向网络广播新区块
+        
+        loop 验证者投票
+            validator -> beacon : 7. 证明投票
+            note right : 验证者对区块进行证明
+        end
+        
+        beacon -> beacon : 8. 聚合证明
+        note right : 收集并聚合验证者证明
+        
+        alt 获得足够证明 (2/3+)
+            beacon -> consensus : 9. 区块最终化
+            note right : 区块被网络接受
+            
+            consensus -> execution : 10. 更新执行状态
+            note right : 应用交易到执行层状态
+        else 证明不足
+            beacon -> beacon : 区块被拒绝
+            note right : 等待下一个时隙
+        end
+    end
+end
+
+' 最终性机制
+group 最终性机制 (Finality Mechanism)
+    
+    note over beacon, consensus : **Casper FFG 最终性**
+    
+    beacon -> beacon : 1. 检查点创建
+    note right : 每个epoch的第一个时隙
+    
+    validator -> beacon : 2. 检查点投票
+    note right : 验证者对检查点进行投票
+    
+    beacon -> beacon : 3. 证明聚合
+    note right : 聚合检查点证明
+    
+    alt 超级多数投票 (2/3+)
+        beacon -> consensus : 4. 检查点合理化
+        note right : 检查点被合理化 (Justified)
+        
+        beacon -> beacon : 5. 等待下一个epoch
+        
+        beacon -> consensus : 6. 检查点最终化
+        note right : 前一个检查点被最终化 (Finalized)
+    else 投票不足
+        beacon -> beacon : 检查点未合理化
+        note right : 等待更多投票
+    end
+end
+
+' 惩罚机制
+group 惩罚机制 (Slashing Mechanism)
+    
+    note over validator, beacon : **验证者惩罚**
+    
+    alt 恶意行为检测
+        validator -> beacon : 双重投票
+        note right : 对同一高度投票两次
+        
+        beacon -> beacon : 1. 检测违规
+        note right : 网络检测到恶意行为
+        
+        beacon -> validator : 2. 执行惩罚
+        note right : 销毁部分质押ETH
+        
+        beacon -> beacon : 3. 强制退出
+        note right : 将验证者从网络中移除
+    end
+    
+    alt 离线惩罚
+        validator -> beacon : 长时间离线
+        note right : 验证者未参与证明
+        
+        beacon -> validator : 4. 怠工惩罚
+        note right : 逐渐减少质押奖励
+    end
+end
+
+' 奖励机制
+group 奖励机制 (Reward Mechanism)
+    
+    note over validator, beacon : **验证者奖励**
+    
+    validator -> beacon : 1. 正确证明
+    note right : 及时准确的证明投票
+    
+    beacon -> validator : 2. 证明奖励
+    note right : 获得基础奖励
+    
+    validator -> beacon : 3. 区块提议
+    note right : 成功提议区块
+    
+    beacon -> validator : 4. 提议奖励
+    note right : 获得额外提议奖励
+    
+    validator -> beacon : 5. 同步委员会
+    note right : 参与轻客户端同步
+    
+    beacon -> validator : 6. 同步奖励
+    note right : 获得同步委员会奖励
+end
+
+' 性能对比
+note bottom
+    **PoW vs PoS 性能对比**
+    
+    **工作量证明 (PoW)**
+    • 能耗: 极高 (~150 TWh/年)
+    • 出块时间: ~13秒
+    • 最终性: 概率性 (需要多个确认)
+    • 安全性: 51%算力攻击
+    
+    **权益证明 (PoS)**  
+    • 能耗: 极低 (~99.95%减少)
+    • 出块时间: 12秒
+    • 最终性: 确定性 (2个epoch)
+    • 安全性: 2/3质押攻击
+end note
+
+@enduml

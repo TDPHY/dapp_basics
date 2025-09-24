@@ -1,0 +1,148 @@
+@startuml 以太坊状态存储模型
+!theme plain
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName "Microsoft YaHei"
+skinparam defaultFontSize 11
+
+title 以太坊账户状态存储模型 (MPT树结构)
+
+' 定义颜色
+!define WORLD_COLOR #E3F2FD
+!define ACCOUNT_COLOR #F3E5F5
+!define STORAGE_COLOR #E8F5E8
+!define CODE_COLOR #FFF3E0
+!define TRIE_COLOR #FFEBEE
+
+package "世界状态 (World State)" WORLD_COLOR {
+    
+    [状态根哈希\nState Root Hash] as stateroot
+    note right of stateroot : 区块头中的stateRoot字段\n指向整个世界状态的根
+    
+    package "账户状态树 (Account Trie)" TRIE_COLOR {
+        [账户Trie根节点\nAccount Trie Root] as accroot
+        [分支节点\nBranch Node] as branch1
+        [扩展节点\nExtension Node] as ext1
+        [叶子节点\nLeaf Node] as leaf1
+        [叶子节点\nLeaf Node] as leaf2
+        [叶子节点\nLeaf Node] as leaf3
+        
+        accroot --> branch1
+        branch1 --> ext1
+        branch1 --> leaf1
+        ext1 --> leaf2
+        ext1 --> leaf3
+        
+        note right of accroot : 键: 账户地址的Keccak256哈希\n值: RLP编码的账户状态
+    }
+}
+
+package "账户状态结构 (Account State)" ACCOUNT_COLOR {
+    class "账户对象 Account" as account {
+        + Nonce: uint64
+        + Balance: *big.Int  
+        + StorageRoot: Hash
+        + CodeHash: Hash
+    }
+    
+    note right of account
+        **账户状态字段说明**
+        • Nonce: 交易计数器，防止重放攻击
+        • Balance: 账户以太币余额(wei单位)
+        • StorageRoot: 合约存储状态树根哈希
+        • CodeHash: 合约字节码的Keccak256哈希
+    end note
+}
+
+package "合约存储状态 (Contract Storage)" STORAGE_COLOR {
+    
+    package "存储状态树 (Storage Trie)" TRIE_COLOR {
+        [存储Trie根节点\nStorage Trie Root] as storageroot
+        [存储分支节点\nStorage Branch] as sbranch
+        [存储叶子节点\nStorage Leaf] as sleaf1
+        [存储叶子节点\nStorage Leaf] as sleaf2
+        
+        storageroot --> sbranch
+        sbranch --> sleaf1
+        sbranch --> sleaf2
+        
+        note right of storageroot : 键: 存储槽位置的Keccak256哈希\n值: RLP编码的存储值
+    }
+    
+    class "存储槽 Storage Slot" as slot {
+        + Key: Hash (位置哈希)
+        + Value: Hash (存储值)
+    }
+}
+
+package "合约代码存储 (Contract Code)" CODE_COLOR {
+    [代码存储\nCode Storage] as codestorage
+    [字节码\nBytecode] as bytecode
+    [代码大小\nCode Size] as codesize
+    
+    codestorage --> bytecode
+    codestorage --> codesize
+    
+    note right of codestorage : 合约字节码单独存储\n通过CodeHash索引
+}
+
+' 连接关系
+stateroot --> accroot : 指向
+
+leaf1 --> account : 包含
+leaf2 --> account : 包含  
+leaf3 --> account : 包含
+
+account --> storageroot : StorageRoot指向
+account --> codestorage : CodeHash指向
+
+storageroot --> sbranch : 存储树结构
+sleaf1 --> slot : 存储数据
+sleaf2 --> slot : 存储数据
+
+' 示例数据
+package "示例数据 (Example Data)" {
+    
+    class "EOA账户示例" as eoa_example {
+        Nonce: 5
+        Balance: 1000000000000000000 (1 ETH)
+        StorageRoot: 0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421
+        CodeHash: 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470
+    }
+    
+    class "合约账户示例" as contract_example {
+        Nonce: 1
+        Balance: 0
+        StorageRoot: 0x1234567890abcdef...
+        CodeHash: 0xabcdef1234567890...
+    }
+    
+    class "存储槽示例" as storage_example {
+        Slot 0: 0x000000000000000000000000000000000000000000000000000000000000007b (123)
+        Slot 1: 0x48656c6c6f20576f726c64000000000000000000000000000000000000000000 ("Hello World")
+        Slot 2: 0x000000000000000000000000a1b2c3d4e5f6789012345678901234567890abcd (地址)
+    }
+}
+
+note bottom of eoa_example : 外部拥有账户(EOA)\n• 空的StorageRoot\n• 空的CodeHash
+
+note bottom of contract_example : 智能合约账户\n• 有存储状态\n• 有合约代码
+
+' MPT树特性说明
+note top of accroot
+    **MPT树特性**
+    • 路径压缩: 扩展节点压缩公共前缀
+    • 十六进制编码: 每个节点最多16个子节点
+    • 默克尔证明: 支持状态证明验证
+    • 惰性加载: 按需从数据库加载节点
+end note
+
+' 性能优化说明
+note bottom
+    **性能优化策略**
+    • 状态缓存: 内存中缓存热点状态
+    • 快照机制: 定期创建状态快照
+    • 状态修剪: 清理历史状态数据
+    • 并行访问: 支持并发读取操作
+end note
+
+@enduml

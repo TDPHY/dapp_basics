@@ -1,0 +1,145 @@
+@startuml 交易生命周期流程图
+!theme plain
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName "Microsoft YaHei"
+skinparam defaultFontSize 11
+
+title 以太坊交易生命周期完整流程
+
+' 定义参与者
+actor "用户\nUser" as user
+participant "钱包\nWallet" as wallet
+participant "Geth节点\nGeth Node" as geth
+participant "交易池\nTxPool" as txpool
+participant "矿工\nMiner" as miner
+participant "EVM\nVirtual Machine" as evm
+participant "状态数据库\nState DB" as statedb
+participant "区块链\nBlockchain" as blockchain
+participant "P2P网络\nP2P Network" as p2p
+
+' 交易创建阶段
+group 交易创建阶段 [Creation Phase]
+    user -> wallet : 1. 创建交易请求
+    note right : 指定接收者、金额、Gas等参数
+    
+    wallet -> wallet : 2. 构建交易对象
+    note right : 设置nonce、gasPrice、gasLimit等
+    
+    wallet -> wallet : 3. 签名交易
+    note right : 使用私钥对交易进行ECDSA签名
+    
+    wallet -> geth : 4. 提交交易\n(eth_sendRawTransaction)
+    note right : 通过JSON-RPC接口提交
+end
+
+' 交易验证阶段
+group 交易验证阶段 [Validation Phase]
+    geth -> geth : 5. 基础格式验证
+    note right : 检查交易格式、签名有效性
+    
+    alt 验证失败
+        geth -> wallet : 返回错误
+        note right : 格式错误、签名无效等
+    else 验证通过
+        geth -> txpool : 6. 提交到交易池
+        
+        txpool -> txpool : 7. 详细验证
+        note right : • 检查nonce顺序\n• 验证账户余额\n• 检查Gas限制
+        
+        alt 验证失败
+            txpool -> geth : 拒绝交易
+            geth -> wallet : 返回错误信息
+        else 验证通过
+            txpool -> txpool : 8. 加入pending队列
+            note right : 根据Gas价格排序
+            
+            geth -> wallet : 返回交易哈希
+            note right : 交易已接受，等待打包
+        end
+    end
+end
+
+' 交易打包阶段
+group 交易打包阶段 [Mining Phase]
+    miner -> txpool : 9. 选择交易
+    note right : 按Gas价格和nonce顺序选择
+    
+    miner -> miner : 10. 构建区块
+    note right : 创建区块头，包含交易列表
+    
+    loop 执行所有交易
+        miner -> evm : 11. 执行交易
+        note right : 在EVM中执行交易逻辑
+        
+        evm -> statedb : 12. 读取账户状态
+        
+        alt 合约调用
+            evm -> evm : 执行智能合约代码
+            note right : 执行字节码指令
+        end
+        
+        alt 执行成功
+            evm -> statedb : 13. 更新状态
+            note right : 更新余额、存储、nonce等
+            
+            evm -> miner : 返回执行结果
+            note right : Gas使用量、日志事件等
+        else 执行失败
+            evm -> miner : 返回失败信息
+            note right : 回滚状态变更
+        end
+    end
+    
+    miner -> miner : 14. 计算状态根
+    note right : 计算新的状态树根哈希
+    
+    miner -> miner : 15. 挖矿(PoW)
+    note right : 寻找满足难度要求的nonce
+end
+
+' 区块确认阶段
+group 区块确认阶段 [Confirmation Phase]
+    miner -> blockchain : 16. 提交新区块
+    note right : 将挖出的区块添加到链上
+    
+    blockchain -> blockchain : 17. 验证区块
+    note right : 验证区块头、交易、状态根等
+    
+    alt 区块无效
+        blockchain -> miner : 拒绝区块
+    else 区块有效
+        blockchain -> statedb : 18. 提交状态变更
+        note right : 将状态变更持久化到数据库
+        
+        blockchain -> p2p : 19. 广播新区块
+        note right : 向网络中其他节点广播
+        
+        p2p -> p2p : 20. 网络传播
+        note right : 区块在P2P网络中传播
+        
+        blockchain -> txpool : 21. 清理交易池
+        note right : 移除已确认的交易
+    end
+end
+
+' 最终确认
+group 最终确认阶段 [Finalization Phase]
+    loop 等待确认
+        blockchain -> blockchain : 22. 累积确认数
+        note right : 等待后续区块确认
+    end
+    
+    blockchain -> user : 23. 交易最终确认
+    note right : 达到足够确认数后\n交易被认为是最终的
+end
+
+' 添加状态说明
+note over user, p2p
+    **交易状态说明**
+    • Pending: 在交易池中等待
+    • Mined: 已被打包到区块
+    • Confirmed: 获得足够确认数
+    • Failed: 执行失败或被拒绝
+end note
+
+@enduml

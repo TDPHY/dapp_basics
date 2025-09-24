@@ -1,0 +1,204 @@
+@startuml P2P网络架构图
+!theme plain
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName "Microsoft YaHei"
+skinparam defaultFontSize 11
+
+title Go-Ethereum P2P网络架构与通信协议
+
+' 定义网络节点
+cloud "以太坊P2P网络\nEthereum P2P Network" as network {
+    
+    node "全节点A\nFull Node A" as nodeA {
+        [Geth实例] as gethA
+        [区块链数据] as dataA
+        [交易池] as txpoolA
+    }
+    
+    node "全节点B\nFull Node B" as nodeB {
+        [Geth实例] as gethB
+        [区块链数据] as dataB
+        [交易池] as txpoolB
+    }
+    
+    node "轻节点C\nLight Node C" as nodeC {
+        [轻客户端] as lightC
+        [区块头] as headersC
+    }
+    
+    node "矿工节点D\nMiner Node D" as nodeD {
+        [Geth+矿工] as minerD
+        [挖矿设备] as miningD
+        [区块链数据] as dataD
+    }
+    
+    node "引导节点\nBootstrap Node" as bootstrap {
+        [节点发现服务] as discovery
+        [已知节点列表] as nodelist
+    }
+}
+
+' P2P协议栈
+package "P2P协议栈 (P2P Protocol Stack)" {
+    
+    package "应用层协议 (Application Protocols)" {
+        [以太坊协议 eth/67] as eth67
+        [轻节点协议 les/4] as les4
+        [快照协议 snap/1] as snap1
+        [发现协议 discv5] as discv5
+    }
+    
+    package "传输层协议 (Transport Protocols)" {
+        [RLPx协议] as rlpx
+        [加密握手] as handshake
+        [帧协议] as framing
+    }
+    
+    package "网络层 (Network Layer)" {
+        [UDP传输] as udp
+        [TCP传输] as tcp
+        [节点发现] as discovery_proto
+    }
+}
+
+' 节点发现机制
+package "节点发现机制 (Node Discovery)" {
+    
+    [Kademlia DHT] as kademlia
+    [节点ID] as nodeid
+    [路由表] as routing
+    [PING/PONG] as pingpong
+    [FIND_NODE] as findnode
+    [NEIGHBORS] as neighbors
+    
+    kademlia --> nodeid
+    kademlia --> routing
+    kademlia --> pingpong
+    kademlia --> findnode
+    kademlia --> neighbors
+}
+
+' 连接管理
+package "连接管理 (Connection Management)" {
+    
+    [连接池] as connpool
+    [对等节点管理] as peermgr
+    [连接限制] as connlimit
+    [信任节点] as trusted
+    [静态节点] as static
+    
+    connpool --> peermgr
+    peermgr --> connlimit
+    peermgr --> trusted
+    peermgr --> static
+}
+
+' 消息类型
+package "消息类型 (Message Types)" {
+    
+    package "区块链消息" {
+        [NewBlockHashes] as newblockhashes
+        [NewBlock] as newblock
+        [GetBlockHeaders] as getblockheaders
+        [BlockHeaders] as blockheaders
+        [GetBlockBodies] as getblockbodies
+        [BlockBodies] as blockbodies
+    }
+    
+    package "交易消息" {
+        [NewPooledTransactionHashes] as newtxhashes
+        [GetPooledTransactions] as getpooltx
+        [PooledTransactions] as pooltx
+        [Transactions] as transactions
+    }
+    
+    package "状态消息" {
+        [GetNodeData] as getnodedata
+        [NodeData] as nodedata
+        [GetReceipts] as getreceipts
+        [Receipts] as receipts
+    }
+}
+
+' 网络连接
+nodeA <--> nodeB : RLPx连接
+nodeA <--> nodeC : RLPx连接  
+nodeA <--> nodeD : RLPx连接
+nodeB <--> nodeC : RLPx连接
+nodeB <--> nodeD : RLPx连接
+nodeC <--> bootstrap : 发现连接
+nodeD <--> bootstrap : 发现连接
+
+' 协议使用
+gethA --> eth67 : 使用
+gethB --> eth67 : 使用
+lightC --> les4 : 使用
+minerD --> eth67 : 使用
+minerD --> snap1 : 使用
+
+' 发现过程
+bootstrap --> kademlia : 提供引导
+kademlia --> discovery_proto : 节点发现
+discovery_proto --> udp : UDP传输
+
+' 连接建立
+eth67 --> rlpx : 协议封装
+les4 --> rlpx : 协议封装
+rlpx --> tcp : TCP传输
+rlpx --> handshake : 加密握手
+
+' 连接管理
+rlpx --> connpool : 连接管理
+connpool --> peermgr : 节点管理
+
+' 消息流转
+eth67 --> newblock : 广播新区块
+eth67 --> transactions : 广播交易
+les4 --> getblockheaders : 请求区块头
+snap1 --> getnodedata : 请求状态数据
+
+' 网络拓扑说明
+note top of network
+    **网络拓扑特点**
+    • 去中心化: 无中心服务器
+    • 自组织: 节点自动发现和连接
+    • 容错性: 节点故障不影响网络
+    • 可扩展: 支持大规模节点网络
+end note
+
+' 协议版本说明
+note right of eth67
+    **eth/67协议特性**
+    • 支持区块和交易同步
+    • 优化的消息格式
+    • 改进的性能和安全性
+    • 向后兼容性
+end note
+
+note right of les4
+    **les/4轻节点协议**
+    • 按需数据请求
+    • 状态证明验证
+    • 流量控制机制
+    • 服务器激励模型
+end note
+
+' 安全机制说明
+note bottom of rlpx
+    **RLPx安全特性**
+    • ECDH密钥交换
+    • AES-256-CTR加密
+    • HMAC-SHA256认证
+    • 前向安全性保证
+end note
+
+' 性能优化
+note bottom of connpool
+    **连接优化策略**
+    • 智能节点选择
+    • 连接数动态调整
+    • 网络延迟优化
+    • 带宽使用控制
+end note
+
+@enduml

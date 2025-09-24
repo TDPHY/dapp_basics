@@ -1,0 +1,129 @@
+@startuml Geth分层架构图
+!theme plain
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName "Microsoft YaHei"
+skinparam defaultFontSize 12
+
+title Go-Ethereum (Geth) 分层架构设计
+
+' 定义颜色
+!define APP_COLOR #E3F2FD
+!define SERVICE_COLOR #F3E5F5
+!define PROTOCOL_COLOR #E8F5E8
+!define CORE_COLOR #FFF3E0
+!define STORAGE_COLOR #FFEBEE
+!define NETWORK_COLOR #F1F8E9
+!define FOUNDATION_COLOR #FAFAFA
+
+package "应用层 (Application Layer)" APP_COLOR {
+    [Geth CLI\n命令行接口] as cli
+    [JSON-RPC API\nHTTP/HTTPS接口] as rpc
+    [GraphQL API\n灵活查询接口] as graphql
+    [WebSocket API\n实时通信接口] as ws
+}
+
+package "服务层 (Service Layer)" SERVICE_COLOR {
+    [账户管理\nAccount Manager] as accounts
+    [挖矿服务\nMiner Service] as miner
+    [交易池\nTransaction Pool] as txpool
+    [事件系统\nEvent System] as event
+}
+
+package "协议层 (Protocol Layer)" PROTOCOL_COLOR {
+    [以太坊协议\nEthereum Protocol] as eth
+    [轻节点协议\nLight Ethereum Subprotocol] as les
+    [快照协议\nSnapshot Protocol] as snap
+    [发现协议\nDiscovery Protocol] as discv5
+}
+
+package "核心层 (Core Layer)" CORE_COLOR {
+    [区块链核心\nBlockchain Core] as core
+    [EVM虚拟机\nEthereum Virtual Machine] as evm
+    [状态管理\nState Manager] as state
+    [共识引擎\nConsensus Engine] as consensus
+}
+
+package "存储层 (Storage Layer)" STORAGE_COLOR {
+    [MPT树\nMerkle Patricia Trie] as trie
+    [数据库接口\nDatabase Interface] as ethdb
+    [快照存储\nSnapshot Storage] as snapshot
+    [缓存系统\nCache System] as cache
+}
+
+package "网络层 (Network Layer)" NETWORK_COLOR {
+    [P2P网络\nPeer-to-Peer Network] as p2p
+    [节点发现\nNode Discovery] as discover
+    [RLPx协议\nRLPx Protocol] as rlpx
+    [连接管理\nConnection Manager] as connmgr
+}
+
+package "基础层 (Foundation Layer)" FOUNDATION_COLOR {
+    [加密算法\nCryptography] as crypto
+    [编码解码\nRLP Encoding] as rlp
+    [工具库\nCommon Utilities] as common
+    [日志系统\nLogging System] as log
+    [配置管理\nConfiguration] as config
+}
+
+' 应用层连接
+cli --> rpc : 调用
+rpc --> accounts : 账户操作
+rpc --> miner : 挖矿控制
+rpc --> txpool : 交易管理
+graphql --> core : 数据查询
+ws --> event : 事件订阅
+
+' 服务层连接
+accounts --> core : 账户状态
+miner --> core : 区块构建
+miner --> consensus : 共识验证
+txpool --> core : 交易验证
+event --> core : 事件监听
+
+' 协议层连接
+eth --> core : 区块同步
+eth --> txpool : 交易广播
+les --> core : 轻节点查询
+snap --> snapshot : 快照同步
+discv5 --> discover : 节点发现
+
+' 核心层连接
+core --> evm : 交易执行
+core --> state : 状态管理
+core --> consensus : 共识验证
+evm --> state : 状态读写
+state --> trie : 状态存储
+consensus --> core : 区块验证
+
+' 存储层连接
+trie --> ethdb : 数据持久化
+snapshot --> ethdb : 快照存储
+cache --> ethdb : 缓存管理
+state --> cache : 状态缓存
+
+' 网络层连接
+eth --> p2p : 协议通信
+les --> p2p : 轻节点通信
+p2p --> rlpx : 加密通信
+p2p --> discover : 节点发现
+rlpx --> connmgr : 连接管理
+
+' 基础层连接
+discover --> crypto : 节点验证
+rlpx --> crypto : 通信加密
+core --> crypto : 签名验证
+evm --> rlp : 数据编码
+state --> rlp : 状态编码
+p2p --> log : 网络日志
+core --> log : 核心日志
+accounts --> config : 配置读取
+
+' 添加注释
+note right of cli : 提供命令行交互界面\n支持节点管理和调试
+note right of rpc : 标准JSON-RPC 2.0接口\n支持HTTP/HTTPS访问
+note right of core : 区块链核心逻辑\n处理区块和交易
+note right of evm : 智能合约执行环境\n支持Solidity字节码
+note right of trie : 默克尔帕特里夏树\n高效状态存储结构
+note right of p2p : Kademlia DHT网络\n支持节点发现和通信
+
+@enduml
